@@ -30,27 +30,28 @@ export default {
 			if (request.method !== "GET") {
 				return new Response(null, {status: 405}); // Method Not Allowed
 			}
-			if (!url.search) {
-				response = await fetch(
-					UPSTREAM_ENDPOINT + "voices?key=" + GCP_API_KEY
-				);
-			} else if (url.search.startsWith("?languageCode=")) {
-				response = await fetch(
-					UPSTREAM_ENDPOINT + "voices" + url.search + "&key=" + GCP_API_KEY
-				);
+			if (url.search) { // ensure query string (key, languageCode) exists
+				const params = new URLSearchParams(url.search);
+				if (params.has("languageCode")) {
+					response = await fetch(UPSTREAM_ENDPOINT + "voices?languageCode=" + params.get("languageCode")
+						+ "&key=" + GCP_API_KEY
+					);
+				}
 			}
 		}
 		if (url.pathname === "/text:synthesize") {
 			if (request.method !== "POST") {
 				return new Response(null, {status: 405}); // Method Not Allowed
 			}
-			response = await fetch(
-				UPSTREAM_ENDPOINT + "text:synthesize?key=" + GCP_API_KEY,
-				{
-					method: "POST",
-					body: request.body,
-				}
-			);
+			if (url.search) { // ensure query string (key) exists
+				response = await fetch(
+					UPSTREAM_ENDPOINT + "text:synthesize?key=" + GCP_API_KEY,
+					{
+						method: "POST",
+						body: request.body,
+					}
+				);
+			}
 		}
 		if (!response) {
 			return new Response(null, {status: 400}); // Bad Request
