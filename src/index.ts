@@ -8,26 +8,60 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-export interface Env {
-	// Example binding to KV. Learn more at https://developers.cloudflare.com/workers/runtime-apis/kv/
-	// MY_KV_NAMESPACE: KVNamespace;
-	//
-	// Example binding to Durable Object. Learn more at https://developers.cloudflare.com/workers/runtime-apis/durable-objects/
-	// MY_DURABLE_OBJECT: DurableObjectNamespace;
-	//
-	// Example binding to R2. Learn more at https://developers.cloudflare.com/workers/runtime-apis/r2/
-	// MY_BUCKET: R2Bucket;
-	//
-	// Example binding to a Service. Learn more at https://developers.cloudflare.com/workers/runtime-apis/service-bindings/
-	// MY_SERVICE: Fetcher;
-}
+// GCP Text-to-speech API
+const UPSTREAM_ENDPOINT = "https://texttospeech.googleapis.com/v1/";
+const ORIGIN = "v.iq-eq.us";
 
+// Proxy request to GCP Text-to-speech API, add API key
 export default {
 	async fetch(
-		request: Request,
-		env: Env,
-		ctx: ExecutionContext
+		request: Request
 	): Promise<Response> {
-		return new Response("Hello World!");
+		const url = new URL(request.url);
+		if (url.hostname !== ORIGIN) {
+			return new Response(null, {status: 403}); // Forbidden
+		}
+		const cache: Cache = caches.default;
+		let response: Response | undefined = await cache.match(request);
+		if (response) {
+			return response;
+		}
+		if (url.pathname === "/voices") {
+			if (request.method !== "GET") {
+				return new Response(null, {status: 405}); // Method Not Allowed
+			}
+			if (!url.search) {
+				response = await fetch(
+					UPSTREAM_ENDPOINT + "voices?key=" + GCP_API_KEY
+				);
+			} else if (url.search.startsWith("?languageCode=")) {
+				response = await fetch(
+					UPSTREAM_ENDPOINT + "voices" + url.search + "&key=" + GCP_API_KEY
+				);
+			}
+		}
+		if (url.pathname === "/text:synthesize") {
+			if (request.method !== "POST") {
+				return new Response(null, {status: 405}); // Method Not Allowed
+			}
+			response = await fetch(
+				UPSTREAM_ENDPOINT + "text:synthesize?key=" + GCP_API_KEY,
+				{
+					method: "POST",
+					body: request.body,
+				}
+			);
+		}
+		if (!response) {
+			return new Response(null, {status: 400}); // Bad Request
+		}
+		return new Response(response.body, {
+			status: response.status,
+			headers: {
+				...response.headers,
+				"Access-Control-Allow-Origin": "https://" + ORIGIN,
+				"Cache-Control": "max-age=7200", // 2 hours
+			}
+		});
 	},
 };
