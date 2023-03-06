@@ -12,10 +12,16 @@
 const UPSTREAM_ENDPOINT = "https://texttospeech.googleapis.com/v1/";
 const ORIGIN = "v.iq-eq.us";
 
-// Proxy request to GCP Text-to-speech API, add API key
+interface Env {
+  GCP_API_KEY: string;
+}
+
+/**
+ * Proxy request to GCP Text-to-speech API, add API key
+ */
 export default {
 	async fetch(
-		request: Request
+		request: Request, env: Env
 	): Promise<Response> {
 		const url = new URL(request.url);
 		if (url.hostname !== ORIGIN) {
@@ -31,10 +37,10 @@ export default {
 				return new Response(null, {status: 405}); // Method Not Allowed
 			}
 			if (url.search) { // ensure query string (key, languageCode) exists
-				const params = new URLSearchParams(url.search);
+				const params: URLSearchParams = new URLSearchParams(url.search);
 				if (params.has("languageCode")) {
 					response = await fetch(UPSTREAM_ENDPOINT + "voices?languageCode=" + params.get("languageCode")
-						+ "&key=" + GCP_API_KEY
+						+ "&key=" + env.GCP_API_KEY
 					);
 				}
 			}
@@ -44,8 +50,7 @@ export default {
 				return new Response(null, {status: 405}); // Method Not Allowed
 			}
 			if (url.search) { // ensure query string (key) exists
-				response = await fetch(
-					UPSTREAM_ENDPOINT + "text:synthesize?key=" + GCP_API_KEY,
+				response = await fetch(UPSTREAM_ENDPOINT + "text:synthesize?key=" + env.GCP_API_KEY,
 					{
 						method: "POST",
 						body: request.body,
