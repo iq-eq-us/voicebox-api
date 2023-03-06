@@ -10,10 +10,10 @@
 
 // GCP Text-to-speech API
 const UPSTREAM_ENDPOINT = "https://texttospeech.googleapis.com/v1/";
-const ORIGIN = "v.iq-eq.us";
 
 interface Env {
-  GCP_API_KEY: string;
+	ORIGIN: string;
+	GCP_API_KEY: string;
 }
 
 /**
@@ -24,7 +24,7 @@ export default {
 		request: Request, env: Env
 	): Promise<Response> {
 		const url = new URL(request.url);
-		if (url.hostname !== ORIGIN) {
+		if (url.hostname !== env.ORIGIN) {
 			return new Response(null, {status: 403}); // Forbidden
 		}
 		const cache: Cache = caches.default;
@@ -65,7 +65,7 @@ export default {
 			status: response.status,
 			headers: {
 				...response.headers,
-				"Access-Control-Allow-Origin": "https://" + ORIGIN,
+				"Access-Control-Allow-Origin": "https://" + env.ORIGIN,
 				"Cache-Control": "max-age=7200", // 2 hours
 			}
 		});
