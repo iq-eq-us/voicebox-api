@@ -42,6 +42,8 @@ export default {
 					response = await fetch(UPSTREAM_ENDPOINT + "voices?languageCode=" + params.get("languageCode")
 						+ "&key=" + env.GCP_API_KEY
 					);
+				} else {
+					response = await fetch(UPSTREAM_ENDPOINT + "voices?key=" + env.GCP_API_KEY);
 				}
 			}
 		}
@@ -50,8 +52,7 @@ export default {
 				return new Response(null, {status: 405}); // Method Not Allowed
 			}
 			if (url.search) { // ensure query string (key) exists
-				response = await fetch(UPSTREAM_ENDPOINT + "text:synthesize?key=" + env.GCP_API_KEY,
-					{
+				response = await fetch(UPSTREAM_ENDPOINT + "text:synthesize?key=" + env.GCP_API_KEY, {
 						method: "POST",
 						body: request.body,
 					}
@@ -61,7 +62,7 @@ export default {
 		if (!response) {
 			return new Response(null, {status: 400}); // Bad Request
 		}
-		return new Response(response.body, {
+		response = new Response(response.body, {
 			status: response.status,
 			headers: {
 				...response.headers,
@@ -69,5 +70,7 @@ export default {
 				"Cache-Control": "max-age=7200", // 2 hours
 			}
 		});
+		await cache.put(request, response.clone());
+		return response;
 	},
 };
