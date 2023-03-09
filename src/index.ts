@@ -54,7 +54,7 @@ export default {
 			if (url.search) { // ensure query string (key) exists
 				response = await fetch(UPSTREAM_ENDPOINT + "text:synthesize?key=" + env.GCP_API_KEY, {
 						method: "POST",
-						body: request.body,
+						body: JSON.stringify(await request.json()),
 					}
 				);
 			}
@@ -70,7 +70,10 @@ export default {
 				"Cache-Control": "max-age=7200", // 2 hours
 			}
 		});
-		await cache.put(request, response.clone());
+		if (request.method === "GET") { // TODO: cache POST requests too
+			// TODO: cache.put() throws error: "TypeError: Found invalid object in transferList"
+			// await cache.put(request, response.clone());
+		}
 		return response;
 	},
 };
