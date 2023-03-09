@@ -24,7 +24,7 @@ export default {
 		request: Request, env: Env
 	): Promise<Response> {
 		const url = new URL(request.url);
-		if (url.hostname !== env.ORIGIN) {
+		if (request.headers.get("Origin") !== env.ORIGIN) {
 			return new Response(null, {status: 403}); // Forbidden
 		}
 		const cache: Cache = caches.default;
@@ -40,10 +40,11 @@ export default {
 				const params: URLSearchParams = new URLSearchParams(url.search);
 				if (params.has("languageCode")) {
 					response = await fetch(UPSTREAM_ENDPOINT + "voices?languageCode=" + params.get("languageCode")
-						+ "&key=" + env.GCP_API_KEY
+						+ "&key=" + env.GCP_API_KEY, {headers: {"Referer": env.ORIGIN}}
 					);
 				} else {
-					response = await fetch(UPSTREAM_ENDPOINT + "voices?key=" + env.GCP_API_KEY);
+					response = await fetch(UPSTREAM_ENDPOINT + "voices?key=" + env.GCP_API_KEY,
+						{headers: {"Referer": env.ORIGIN}});
 				}
 			}
 		}
@@ -54,6 +55,7 @@ export default {
 			if (url.search) { // ensure query string (key) exists
 				response = await fetch(UPSTREAM_ENDPOINT + "text:synthesize?key=" + env.GCP_API_KEY, {
 						method: "POST",
+						headers: {"Referer": env.ORIGIN},
 						body: JSON.stringify(await request.json()),
 					}
 				);
@@ -66,7 +68,7 @@ export default {
 			status: response.status,
 			headers: {
 				...response.headers,
-				"Access-Control-Allow-Origin": "https://" + env.ORIGIN,
+				"Access-Control-Allow-Origin": env.ORIGIN,
 				"Cache-Control": "max-age=7200", // 2 hours
 			}
 		});
