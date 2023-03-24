@@ -53,10 +53,16 @@ export default {
 				return new Response(null, {status: 405}); // Method Not Allowed
 			}
 			if (url.search) { // ensure query string (key) exists
+				// Reject request if json body is longer than 500 characters
+				const body: JSON = await request.json();
+				// @ts-ignore
+				if (body["input"]["text"].length > 500) {
+					return new Response(null, {status: 413}); // Payload Too Large
+				}
 				response = await fetch(UPSTREAM_ENDPOINT + "text:synthesize?key=" + env.GCP_API_KEY, {
 						method: "POST",
 						headers: {"Referer": env.ORIGIN},
-						body: JSON.stringify(await request.json()),
+						body: JSON.stringify(body),
 					}
 				);
 			}
