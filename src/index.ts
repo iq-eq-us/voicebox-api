@@ -79,8 +79,7 @@ export default {
 			}
 		});
 		if (request.method === "GET") { // TODO: cache POST requests too
-			// TODO: cache.put() throws error: "TypeError: Found invalid object in transferList"
-			// await cache.put(request, response.clone());
+			await cache.put(request, response.clone());
 		}
 		return response;
 	},
