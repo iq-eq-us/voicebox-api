@@ -34,6 +34,7 @@ export default {
 		if (response) {
 			return response;
 		}
+		console.log("Requesting " + url.pathname);
 		if (url.pathname === "/voices") {
 			if (request.method !== "GET") {
 				return new Response(null, {status: 405}); // Method Not Allowed
@@ -56,9 +57,10 @@ export default {
 			}
 			if (url.search) { // ensure query string (key) exists
 				const body: JSON = await request.json();
+				console.log("Syn body: " + body);
 				// Validate request body
 				// @ts-ignore
-				if (body["input"]["text"] && body["voice"]["languageCode"] && body["voice"]["name"] && body["audioConfig"]["audioEncoding"]) {
+				if (body["input"]["text"] && body["voice"]["languageCode"] && body["audioConfig"]["audioEncoding"]) {
 					// Reject request if json body is longer than 500 characters
 					// @ts-ignore
 					if (body["input"]["text"].length > 500) {
@@ -80,6 +82,7 @@ export default {
 			}
 			if (url.search) { // ensure query string (key) exists
 				const params: URLSearchParams = new URLSearchParams(url.search);
+				console.log("Translate params: " + params);
 				if (params.has("q") && params.has("target")) { // required query params
 					// @ts-ignore
 					const query: string = params.get("q");
@@ -88,7 +91,7 @@ export default {
 					if (query.length > 500) {
 						return new Response(null, {status: 413}); // Payload Too Large
 					}
-					response = await fetch(UPSTREAM_TRANSLATE_ENDPOINT + "?q=" + query +
+					response = await fetch(UPSTREAM_TRANSLATE_ENDPOINT + "?format=text&q=" + query +
 						(params.has("target") ? "&target=" + params.get("target") : "") +
 						(params.has("source") ? "&source=" + params.get("source") : "") +
 						"&key=" + env.GCP_API_KEY, {
